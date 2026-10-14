@@ -1,6 +1,9 @@
 {
   "name": "ac-good-boy",
-  "owner": { "name": "wellwei1111" },
+  "description": "AC Good Boy：坚决不违规的 Claude 使用条款合规插件",
+  "owner": {
+    "name": "wellwei1111"
+  },
   "plugins": [
     {
       "name": "ac-good-boy",

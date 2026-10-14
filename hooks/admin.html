@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AC Good Boy 后台</title>
+<style>
+  :root { --bg:#f7f7f5; --card:#fff; --text:#1f2328; --muted:#6b7280; --line:#e5e7eb; --accent:#2563eb; --bad:#dc2626; --ok:#16a34a; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#16181d; --card:#1f2229; --text:#e6e6e6; --muted:#9aa0aa; --line:#30343c; --accent:#60a5fa; --bad:#f87171; --ok:#4ade80; } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:14px/1.6 -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
+  main { max-width:1000px; margin:0 auto; padding:24px 16px 80px; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  h2 { font-size:16px; margin:0 0 12px; }
+  .sub { color:var(--muted); margin:0 0 20px; }
+  section { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:16px; }
+  table { width:100%; border-collapse:collapse; }
+  th, td { text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-weight:500; font-size:12px; }
+  td.why { color:var(--muted); font-size:12px; }
+  .tag { display:inline-block; font-size:11px; padding:0 6px; border-radius:4px; border:1px solid var(--line); color:var(--muted); }
+  select, input, textarea, button { font:inherit; color:inherit; background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:5px 8px; }
+  textarea { width:100%; min-height:70px; font-family:ui-monospace, monospace; font-size:12px; }
+  input[type=text] { width:100%; }
+  button { cursor:pointer; background:var(--accent); color:#fff; border-color:var(--accent); }
+  button.ghost { background:transparent; color:var(--accent); }
+  button.danger { background:transparent; color:var(--bad); border-color:var(--bad); }
+  .row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px; }
+  label { display:block; font-size:12px; color:var(--muted); }
+  .stat b { font-size:18px; display:block; }
+  pre.manual { white-space:pre-wrap; max-height:420px; overflow:auto; font-size:13px; margin:0; }
+  .table-wrap { overflow-x:auto; }
+  #toast { position:fixed; left:50%; bottom:20px; transform:translateX(-50%); background:var(--text); color:var(--bg); padding:8px 14px; border-radius:8px; display:none; max-width:90vw; }
+  .bar { position:sticky; bottom:0; display:flex; justify-content:flex-end; gap:8px; padding:12px 0; background:linear-gradient(transparent, var(--bg) 40%); }
+</style>
+</head>
+<body>
+<main>
+  <h1>🐶 AC Good Boy 后台</h1>
+  <p class="sub">坚决不违规。在这里决定哪些动作被禁止、哪些需要确认、哪些只提醒。改完点"保存"立即生效。</p>
+
+  <section>
+    <h2>状态</h2>
+    <div class="row">
+      <div class="stat"><b id="ver">-</b><span class="tag">违规清单版本</span></div>
+      <div class="stat"><b id="src">-</b><span class="tag">来源</span></div>
+      <div class="stat"><b id="last">-</b><span class="tag">上次检查更新</span></div>
+      <button class="ghost" id="check">立即检查更新</button>
+    </div>
+    <p class="sub" id="lastmsg" style="margin:8px 0 0"></p>
+  </section>
+
+  <section>
+    <h2>默认动作</h2>
+    <p class="sub">没有单独设置的规则，按风险级别使用这里的动作。⛔ 禁止 = 直接拦下；❓ 需确认 = 弹窗让你决定；⚠️ 提醒 = 只提示。</p>
+    <div class="row">
+      <label>高风险 <select id="def-high"></select></label>
+      <label>中风险 <select id="def-medium"></select></label>
+    </div>
+  </section>
+
+  <section>
+    <h2>规则</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>编号</th><th>规则</th><th>风险</th><th>来源</th><th>动作</th><th></th></tr></thead>
+      <tbody id="rules"></tbody>
+    </table></div>
+    <p class="sub" style="margin:8px 0 0">R00「不让 AI 自己关掉守卫」写死在代码里，始终需要你确认，不能关闭。</p>
+  </section>
+
+  <section>
+    <h2>添加自定义禁止项</h2>
+    <div class="grid">
+      <div><label>编号（C 开头，如 C01）</label><input type="text" id="c-id"></div>
+      <div><label>标题</label><input type="text" id="c-title" placeholder="不把公司代码发给外部服务"></div>
+      <div><label>风险</label><select id="c-sev"><option value="high">高</option><option value="medium">中</option></select></div>
+    </div>
+    <label style="margin-top:10px">原因</label><input type="text" id="c-why">
+    <label style="margin-top:10px">匹配规则：每行一组，同一行内用 <code>&amp;&amp;</code> 分隔的正则需全部命中；任意一行命中即触发（不区分大小写）</label>
+    <textarea id="c-match" placeholder="内部代码 && (上传|发送|paste)&#10;internal-secret"></textarea>
+    <div class="row" style="margin-top:10px"><button id="c-add">添加</button></div>
+  </section>
+
+  <section>
+    <h2>忽略的文件路径</h2>
+    <p class="sub">每行一个通配符（如 <code>docs/*.md</code>）。写入这些文件时不检查内容。</p>
+    <textarea id="ignore"></textarea>
+  </section>
+
+  <section>
+    <h2>自动更新</h2>
+    <p class="sub">定期下载最新的违规清单和用户手册（只下载规则数据和文档，不下载任何代码）。插件代码本身通过 <code>/plugin</code> 更新。</p>
+    <div class="grid">
+      <label><input type="checkbox" id="u-enabled"> 开启自动更新</label>
+      <div><label>间隔（小时）</label><input type="number" id="u-interval" min="1"></div>
+    </div>
+    <label style="margin-top:10px">更新地址</label><input type="text" id="u-url">
+  </section>
+
+  <section>
+    <h2>用户手册</h2>
+    <pre class="manual" id="manual"></pre>
+  </section>
+
+  <div class="bar"><button class="ghost" id="reload">放弃修改</button><button id="save">保存</button></div>
+</main>
+<div id="toast"></div>
+<script>
+const TOKEN = "__TOKEN__";
+const ACTIONS = { block: "⛔ 禁止", ask: "❓ 需确认", warn: "⚠️ 提醒", off: "关闭" };
+const SOURCES = { bundled: "内置", cache: "已自动更新", custom: "自定义" };
+let data = null;
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.style.display = "block";
+  clearTimeout(toast.timer); toast.timer = setTimeout(() => (t.style.display = "none"), 3500);
+}
+
+async function api(path, body) {
+  const res = await fetch(path, {
+    method: body ? "POST" : "GET",
+    headers: { "X-AC-Token": TOKEN, "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || res.statusText);
+  return json;
+}
+
+function options(selected, includeDefault) {
+  const opts = includeDefault ? [["", "按默认"]] : [];
+  return opts.concat(Object.entries(ACTIONS)).map(([v, l]) => `<option value="${v}"${v === selected ? " selected" : ""}>${l}</option>`).join("");
+}
+
+function render() {
+  const c = data.config;
+  $("ver").textContent = "v" + data.rules_version + (data.rules_updated ? "（" + data.rules_updated + "）" : "");
+  $("src").textContent = SOURCES[data.source];
+  $("last").textContent = data.state.last_check ? new Date(data.state.last_check * 1000).toLocaleString() : "从未";
+  $("lastmsg").textContent = data.state.last_result || "";
+  $("def-high").innerHTML = options(c.default_actions.high);
+  $("def-medium").innerHTML = options(c.default_actions.medium);
+  $("rules").innerHTML = data.rules.map((r) => {
+    const override = (c.rules[r.id] || {}).action || "";
+    return `<tr>
+      <td>${esc(r.id)}</td>
+      <td>${esc(r.title)}<div class="why">${esc(r.why)}</div></td>
+      <td><span class="tag">${r.severity === "high" ? "高" : "中"}</span></td>
+      <td><span class="tag">${SOURCES[r.source]}</span></td>
+      <td><select data-rule="${esc(r.id)}">${options(override, true)}</select></td>
+      <td>${r.source === "custom" ? `<button class="danger" data-del="${esc(r.id)}">删除</button>` : ""}</td>
+    </tr>`;
+  }).join("");
+  $("ignore").value = c.ignore_paths.join("\n");
+  $("u-enabled").checked = !!c.update.enabled;
+  $("u-interval").value = c.update.interval_hours;
+  $("u-url").value = c.update.base_url;
+  $("manual").textContent = data.manual;
+}
+
+function collect() {
+  const c = JSON.parse(JSON.stringify(data.config));
+  c.default_actions = { high: $("def-high").value, medium: $("def-medium").value };
+  c.rules = {};
+  document.querySelectorAll("select[data-rule]").forEach((s) => { if (s.value) c.rules[s.dataset.rule] = { action: s.value }; });
+  c.ignore_paths = $("ignore").value.split("\n").map((s) => s.trim()).filter(Boolean);
+  c.update = { enabled: $("u-enabled").checked, interval_hours: Number($("u-interval").value), base_url: $("u-url").value.trim() };
+  return c;
+}
+
+async function save(config, msg) {
+  try { data = await api("/api/config", config); render(); toast(msg || "已保存，立即生效"); }
+  catch (e) { toast("保存失败：" + e.message); }
+}
+
+async function load() {
+  try { data = await api("/api/state"); render(); } catch (e) { toast("加载失败：" + e.message); }
+}
+
+$("save").onclick = () => save(collect());
+$("reload").onclick = load;
+$("check").onclick = async () => {
+  try { data = await api("/api/update", {}); render(); toast(data.message); } catch (e) { toast(e.message); }
+};
+$("rules").onclick = (e) => {
+  const id = e.target.dataset && e.target.dataset.del;
+  if (!id || !confirm("删除自定义规则 " + id + "？")) return;
+  const c = collect();
+  c.custom_rules = c.custom_rules.filter((r) => r.id !== id);
+  delete c.rules[id];
+  save(c, "已删除 " + id);
+};
+$("c-add").onclick = () => {
+  const match = $("c-match").value.split("\n").map((l) => l.split("&&").map((s) => s.trim()).filter(Boolean)).filter((g) => g.length);
+  const rule = { id: $("c-id").value.trim(), title: $("c-title").value.trim(), why: $("c-why").value.trim(), severity: $("c-sev").value, match };
+  if (!rule.id || !rule.title || !match.length) return toast("请填写编号、标题和匹配规则");
+  const c = collect();
+  c.custom_rules = c.custom_rules.concat([rule]);
+  save(c, "已添加 " + rule.id).then(() => { ["c-id", "c-title", "c-why", "c-match"].forEach((id) => ($(id).value = "")); });
+};
+load();
+</script>
+</body>
+</html>
