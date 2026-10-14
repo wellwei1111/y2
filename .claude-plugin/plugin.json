@@ -1,0 +1,8 @@
+{
+  "name": "ac-good-boy",
+  "version": "0.1.0",
+  "description": "坚决不违规：在提示词和工具调用前检查是否触碰 Anthropic / Claude 使用条款红线，一旦疑似违规立即提醒。",
+  "author": { "name": "wellwei1111" },
+  "license": "MIT",
+  "keywords": ["compliance", "safety", "terms-of-service", "guardrail"]
+}

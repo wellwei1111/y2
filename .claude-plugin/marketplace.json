@@ -1,0 +1,11 @@
+{
+  "name": "ac-good-boy",
+  "owner": { "name": "wellwei1111" },
+  "plugins": [
+    {
+      "name": "ac-good-boy",
+      "source": "./",
+      "description": "坚决不违规：Claude 使用条款合规提醒插件"
+    }
+  ]
+}

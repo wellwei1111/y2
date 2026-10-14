@@ -1,0 +1,206 @@
+{
+  "_comment": "每条规则的 match 是若干组正则；任意一组里的所有正则都命中（不区分大小写）即视为触发。severity: high = 需要你确认 / 严格模式下直接拦截；medium = 仅提醒。",
+  "rules": [
+    {
+      "id": "R01",
+      "title": "不抓取 Cookie / 网页会话令牌",
+      "why": "读取浏览器 Cookie 库或 claude.ai 的 sessionKey 来冒用登录态，属于未经授权访问账户，违反使用条款。",
+      "severity": "high",
+      "match": [
+        [
+          "sessionKey|sk-ant-sid"
+        ],
+        [
+          "(Default|Profile [0-9]+)[/\\\\](Network[/\\\\])?Cookies|cookies\\.sqlite|Login Data"
+        ],
+        [
+          "(cookie|cookies)",
+          "(claude\\.ai|anthropic)",
+          "(抓|取|偷|导出|提取|复制|窃|grab|steal|extract|dump|export|read|copy)"
+        ],
+        [
+          "browser_cookie3|pycookiecheat|rookiepy"
+        ]
+      ]
+    },
+    {
+      "id": "R02",
+      "title": "不提取、导出或复用 OAuth / 登录凭证",
+      "why": "Claude Code / Claude App 的 OAuth 凭证只供官方客户端本人使用；把它拷出来、塞进第三方工具或分享给别人，违反条款。",
+      "severity": "high",
+      "match": [
+        [
+          "\\.claude/\\.credentials\\.json"
+        ],
+        [
+          "security\\s+find-generic-password",
+          "(claude|anthropic)"
+        ],
+        [
+          "sk-ant-oat\\d*-"
+        ],
+        [
+          "(oauth|access[_ -]?token|refresh[_ -]?token|凭证|令牌)",
+          "(claude|anthropic)",
+          "(抓|提取|导出|复用|偷|窃|盗|分享|共享|第三方|extract|dump|steal|reuse|share|third[- ]party)"
+        ]
+      ]
+    },
+    {
+      "id": "R03",
+      "title": "不拦截 / 抓包桌面客户端或 Claude Code 的流量",
+      "why": "用中间人代理解密官方客户端流量，以获取凭证、私有接口或绕过限制，属于未经授权访问和逆向。",
+      "severity": "high",
+      "match": [
+        [
+          "(mitmproxy|mitmdump|mitmweb|charles|fiddler|burp|proxyman|wireshark|tcpdump|抓包|中间人)",
+          "(claude|anthropic)"
+        ],
+        [
+          "NODE_TLS_REJECT_UNAUTHORIZED\\s*=\\s*0",
+          "claude"
+        ],
+        [
+          "(intercept|sniff|拦截|嗅探)",
+          "(claude|anthropic)",
+          "(traffic|request|流量|请求|desktop|桌面|客户端)"
+        ]
+      ]
+    },
+    {
+      "id": "R04",
+      "title": "不批量采集 Claude 输出去训练 / 蒸馏其他模型（如 DeepSeek 等）",
+      "why": "条款禁止用 Claude 的输出开发与 Anthropic 竞争的模型，包括蒸馏、构建训练集、微调其他模型。",
+      "severity": "high",
+      "match": [
+        [
+          "(蒸馏|distill)",
+          "(claude|anthropic|sonnet|opus|haiku)"
+        ],
+        [
+          "(训练集|训练数据|数据集|微调|training (data|set)|dataset|fine-?tun|SFT|RLHF|DPO)",
+          "(claude|anthropic|sonnet|opus|haiku)",
+          "(输出|回答|回复|生成|采集|批量|output|response|generat|collect|harvest|scrap)"
+        ],
+        [
+          "(deepseek|qwen|llama|glm|kimi|mistral|yi-|baichuan|minimax|自研模型|自己的模型|our own model)",
+          "(训练|蒸馏|微调|train|distill|fine-?tun)",
+          "(claude|anthropic|sonnet|opus|haiku)"
+        ]
+      ]
+    },
+    {
+      "id": "R05",
+      "title": "不把订阅（Pro / Max）额度包装成 API 或第三方服务",
+      "why": "订阅账号只供本人通过官方产品使用；用订阅 OAuth 做反代、转成 OpenAI 兼容接口或接入第三方应用，违反条款。需要程序化调用请使用 API Key。",
+      "severity": "high",
+      "match": [
+        [
+          "(订阅|subscription|claude ?(pro|max)|oauth)",
+          "(反代|反向代理|中转|转发|转成 ?api|openai[- ]?(兼容|compatible)|reverse[- ]proxy|2api|to-?api)"
+        ]
+      ]
+    },
+    {
+      "id": "R06",
+      "title": "不共享、出租、转售账号或 API Key，不搞号池",
+      "why": "账号和 Key 只能本人或本组织授权成员使用；拼车、号池、倒卖都违反条款。",
+      "severity": "high",
+      "match": [
+        [
+          "(号池|账号池|account pool|拼车|合租|共享账号|账号共享|出租账号|倒卖|转售|resell|sell (claude )?accounts?)"
+        ],
+        [
+          "(claude|anthropic|api ?key|账号)",
+          "(多人共用|多人共享|卖给|出售|share (my|the) account)"
+        ]
+      ]
+    },
+    {
+      "id": "R07",
+      "title": "不绕过速率限制或用量上限",
+      "why": "用多账号轮换、伪造请求等方式规避限流 / 用量上限违反条款。撞到上限请等待或升级方案。",
+      "severity": "high",
+      "match": [
+        [
+          "(绕过|规避|突破|破解|bypass|evade|circumvent|get around)",
+          "(限流|速率|频率|额度|用量|上限|rate ?limit|usage limit|quota|weekly limit)"
+        ],
+        [
+          "(轮换|轮询|切换|rotate|rotating|round[- ]robin)",
+          "(账号|账户|accounts?|keys?|tokens?)",
+          "(限流|限制|额度|封号|rate ?limit|usage limit|quota|ban)"
+        ]
+      ]
+    },
+    {
+      "id": "R08",
+      "title": "不批量注册账号、不绕过地区或身份限制",
+      "why": "批量 / 虚假注册、接码平台、在不支持的地区规避限制使用，均违反条款。",
+      "severity": "high",
+      "match": [
+        [
+          "(批量注册|自动注册|接码|虚拟手机号|bulk (sign ?up|regist)|mass (sign ?up|account creation)|auto[- ]?register)"
+        ],
+        [
+          "(绕过|规避|bypass|evade|circumvent)",
+          "(地区|区域|国家|region|geo|country)",
+          "(限制|封锁|restriction|block|lock)"
+        ]
+      ]
+    },
+    {
+      "id": "R09",
+      "title": "不用脚本自动化抓取 claude.ai 网页端",
+      "why": "除官方 API 外，禁止用爬虫、无头浏览器等自动化方式访问 claude.ai。程序化使用请走 API。",
+      "severity": "medium",
+      "match": [
+        [
+          "(puppeteer|playwright|selenium|undetected[-_]chromedriver|headless|爬虫|爬取|scrap)",
+          "claude\\.ai"
+        ]
+      ]
+    },
+    {
+      "id": "R10",
+      "title": "不逆向、破解或篡改官方客户端",
+      "why": "反编译 / 解包 / 打补丁解锁官方客户端功能或限制，违反条款。",
+      "severity": "medium",
+      "match": [
+        [
+          "(asar extract|反编译|解包|破解|crack|decompile|deobfuscat|patch|逆向|reverse[- ]engineer)",
+          "(claude|anthropic)",
+          "(app|desktop|桌面|客户端|cli\\.js|binary|二进制|限制|limit|unlock|解锁)"
+        ]
+      ]
+    },
+    {
+      "id": "R11",
+      "title": "不硬编码、不上传 API Key",
+      "why": "把 sk-ant-api 密钥写进代码或提交到仓库会导致泄露和被盗用。请使用环境变量或密钥管理。",
+      "severity": "medium",
+      "tools_only": true,
+      "match": [
+        [
+          "sk-ant-api\\d*-[A-Za-z0-9_-]{20,}"
+        ]
+      ]
+    },
+    {
+      "id": "R12",
+      "title": "不越狱、不绕过模型安全机制",
+      "why": "使用越狱提示词或规避安全防护来获取被禁止的内容，违反使用政策（Usage Policy）。",
+      "severity": "medium",
+      "match": [
+        [
+          "(越狱|破限|jailbreak|DAN mode|developer mode prompt|ignore (all )?(previous|your) (instructions|rules|guidelines))"
+        ],
+        [
+          "(绕过|规避|关闭|bypass|disable)",
+          "(安全|审查|过滤|safety|guardrail|content filter|moderation)",
+          "(claude|模型|model|你)"
+        ]
+      ]
+    }
+  ]
+}

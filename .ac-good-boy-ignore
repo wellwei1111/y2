@@ -1,0 +1,4 @@
+# 这些文件本身就在描述规则，写入时不检查
+README.md
+RULES.md
+tests/*
